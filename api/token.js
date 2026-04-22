@@ -10,7 +10,8 @@ export default async function handler(req, res) {
   const CLIENT_SECRET = process.env.ML_CLIENT_SECRET;
 
   try {
-    const response = await fetch('https://api.mercadolibre.com/oauth/token', {
+    // Step 1: get token
+    const tokenRes = await fetch('https://api.mercadolibre.com/oauth/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -19,13 +20,29 @@ export default async function handler(req, res) {
       body: `grant_type=client_credentials&client_id=${APP_ID}&client_secret=${CLIENT_SECRET}`,
     });
 
-    const data = await response.json();
+    const tokenData = await tokenRes.json();
+    if (!tokenRes.ok) return res.status(tokenRes.status).json({ error: tokenData });
 
-    if (!response.ok) {
-      return res.status(response.status).json({ error: data });
+    const token = tokenData.access_token;
+
+    // Step 2: if query provided, also search
+    const body = req.body;
+    const query = typeof body === 'string' ? JSON.parse(body).query : body?.query;
+
+    if (!query) {
+      return res.status(200).json({ access_token: token, expires_in: tokenData.expires_in });
     }
 
-    return res.status(200).json({ access_token: data.access_token, expires_in: data.expires_in });
+    const searchRes = await fetch(
+      `https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(query)}&limit=20`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    const searchData = await searchRes.json();
+    if (!searchRes.ok) return res.status(searchRes.status).json({ error: searchData });
+
+    return res.status(200).json(searchData);
+
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
