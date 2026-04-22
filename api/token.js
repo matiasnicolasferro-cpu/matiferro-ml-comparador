@@ -10,7 +10,11 @@ export default async function handler(req, res) {
   const CLIENT_SECRET = process.env.ML_CLIENT_SECRET;
 
   try {
-    // Step 1: get token
+    const body = req.body;
+    const query = typeof body === 'string' ? JSON.parse(body).query : body?.query;
+    if (!query) return res.status(400).json({ error: 'Query required' });
+
+    // Get app token
     const tokenRes = await fetch('https://api.mercadolibre.com/oauth/token', {
       method: 'POST',
       headers: {
@@ -25,25 +29,21 @@ export default async function handler(req, res) {
 
     const token = tokenData.access_token;
 
-    // Step 2: if query provided, also search
-    const body = req.body;
-    const query = typeof body === 'string' ? JSON.parse(body).query : body?.query;
-
-    if (!query) {
-      return res.status(200).json({ access_token: token, expires_in: tokenData.expires_in });
-    }
-
+    // Search using app token
     const searchRes = await fetch(
       `https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(query)}&limit=20`,
-      { headers: { Authorization: `Bearer ${token}` } }
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'User-Agent': 'ML-Comparador/1.0',
+        }
+      }
     );
 
-    const searchData = await searchRes.json();
-    if (!searchRes.ok) return res.status(searchRes.status).json({ error: searchData });
+    const searchText = await searchRes.text();
 
-    return res.status(200).json(searchData);
-
-  } catch (err) {
-    return res.status(500).json({ error: err.message });
-  }
-}
+    if (!searchRes.ok) {
+      // Fallback: try without auth
+      const fallbackRes = await fetch(
+        `https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(query)}&limit=20&access_token=${token}`
+      );
