@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ML Comparador</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0e14;
+    --surface: #13151f;
+    --surface2: #1a1d2e;
+    --accent: #f5c518;
+    --accent2: #ff6b35;
+    --text: #f0f0f0;
+    --muted: #6b7080;
+    --border: #252840;
+    --green: #2ecc71;
+    --radius: 12px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(rgba(245,197,24,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(245,197,24,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 0 24px; position: relative; z-index: 1; }
+  header { padding: 40px 0 32px; display: flex; align-items: center; gap: 16px; }
+  .logo-mark { background: var(--accent); color: #0d0e14; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 18px; width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 8px; letter-spacing: -1px; flex-shrink: 0; }
+  .logo-text { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 20px; letter-spacing: -0.5px; }
+  .logo-text span { color: var(--accent); }
+  .tagline { font-size: 12px; color: var(--muted); font-weight: 300; letter-spacing: 0.5px; margin-top: 1px; }
+  .hero { padding: 20px 0 48px; text-align: center; }
+  .hero h1 { font-family: 'Syne', sans-serif; font-size: clamp(28px, 5vw, 48px); font-weight: 800; line-height: 1.1; letter-spacing: -1.5px; margin-bottom: 12px; }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 15px; margin-bottom: 36px; font-weight: 300; }
+  .search-wrap { display: flex; gap: 10px; max-width: 620px; margin: 0 auto; }
+  .search-input { flex: 1; background: var(--surface); border: 1.5px solid var(--border); color: var(--text); font-family: 'DM Sans', sans-serif; font-size: 16px; padding: 14px 20px; border-radius: var(--radius); outline: none; transition: border-color 0.2s; }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input::placeholder { color: var(--muted); }
+  .search-btn { background: var(--accent); color: #0d0e14; border: none; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; padding: 14px 28px; border-radius: var(--radius); cursor: pointer; transition: opacity 0.2s, transform 0.1s; white-space: nowrap; }
+  .search-btn:hover { opacity: 0.9; }
+  .search-btn:active { transform: scale(0.98); }
+  .search-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .filters { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; align-items: center; }
+  .filter-label { font-size: 12px; color: var(--muted); font-weight: 500; letter-spacing: 0.5px; text-transform: uppercase; margin-right: 4px; }
+  .filter-btn { background: var(--surface); border: 1.5px solid var(--border); color: var(--muted); font-family: 'DM Sans', sans-serif; font-size: 13px; padding: 6px 14px; border-radius: 20px; cursor: pointer; transition: all 0.15s; }
+  .filter-btn:hover, .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(245,197,24,0.06); }
+  .status { text-align: center; padding: 60px 20px; color: var(--muted); font-size: 15px; }
+  .spinner { width: 36px; height: 36px; border: 2.5px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto 16px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .results-header { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 20px; }
+  .results-count { font-family: 'Syne', sans-serif; font-size: 13px; color: var(--muted); font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+  .results-count strong { color: var(--accent); }
+  .ai-summary { background: var(--surface2); border: 1.5px solid rgba(245,197,24,0.2); border-radius: var(--radius); padding: 18px 22px; margin-bottom: 24px; display: flex; gap: 14px; align-items: flex-start; }
+  .ai-icon { background: rgba(245,197,24,0.12); color: var(--accent); font-size: 14px; font-weight: 700; font-family: 'Syne', sans-serif; width: 32px; height: 32px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+  .ai-summary p { font-size: 14px; line-height: 1.6; color: #c8cad8; }
+  .results-grid { display: flex; flex-direction: column; gap: 12px; }
+  .product-card { background: var(--surface); border: 1.5px solid var(--border); border-radius: var(--radius); padding: 18px 20px; display: grid; grid-template-columns: 80px 1fr auto; gap: 16px; align-items: center; transition: border-color 0.2s, transform 0.15s; text-decoration: none; color: inherit; cursor: pointer; position: relative; overflow: hidden; }
+  .product-card:hover { border-color: rgba(245,197,24,0.4); transform: translateY(-1px); }
+  .product-card.top-pick { border-color: var(--accent); }
+  .top-pick-badge { position: absolute; top: 0; left: 0; background: var(--accent); color: #0d0e14; font-family: 'Syne', sans-serif; font-weight: 700; font-size: 10px; padding: 3px 10px; border-bottom-right-radius: 8px; letter-spacing: 0.5px; text-transform: uppercase; }
+  .product-img { width: 80px; height: 80px; object-fit: contain; background: #fff; border-radius: 8px; padding: 4px; }
+  .product-img-placeholder { width: 80px; height: 80px; background: var(--surface2); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: var(--muted); font-size: 24px; }
+  .product-info { min-width: 0; }
+  .product-title { font-size: 14px; font-weight: 500; line-height: 1.4; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .product-meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .badge { font-size: 11px; padding: 3px 8px; border-radius: 4px; font-weight: 500; }
+  .badge-green { background: rgba(46,204,113,0.12); color: var(--green); }
+  .badge-blue { background: rgba(52,152,219,0.12); color: #5dade2; }
+  .badge-gray { background: var(--surface2); color: var(--muted); }
+  .seller-rep { font-size: 11px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+  .rep-dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .rep-platinum { background: #a8d8ea; }
+  .rep-gold { background: var(--accent); }
+  .rep-silver { background: #aaa; }
+  .rep-green { background: var(--green); }
+  .product-price-col { text-align: right; min-width: 110px; }
+  .product-price { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 700; color: var(--text); white-space: nowrap; }
+  .product-price-original { font-size: 12px; color: var(--muted); text-decoration: line-through; margin-bottom: 2px; }
+  .discount-pct { font-size: 12px; color: var(--green); font-weight: 500; }
+  .score-bar { margin-top: 8px; display: flex; align-items: center; gap: 6px; justify-content: flex-end; }
+  .score-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; }
+  .score-track { width: 60px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 2px; background: var(--accent); transition: width 0.6s ease; }
+  .score-num { font-size: 11px; font-weight: 600; color: var(--accent); font-family: 'Syne', sans-serif; }
+  .empty-state { text-align: center; padding: 80px 20px; }
+  .empty-icon { font-size: 40px; margin-bottom: 16px; opacity: 0.4; }
+  .empty-state h3 { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 700; margin-bottom: 8px; }
+  .empty-state p { color: var(--muted); font-size: 14px; }
+  footer { padding: 40px 0 24px; text-align: center; color: var(--muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 60px; }
+  @media (max-width: 600px) {
+    .product-card { grid-template-columns: 60px 1fr; }
+    .product-price-col { grid-column: 2; text-align: left; }
+    .product-img { width: 60px; height: 60px; }
+    .search-wrap { flex-direction: column; }
+    .search-btn { width: 100%; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <div class="logo-mark">ML</div>
+    <div>
+      <div class="logo-text"><span>ML</span> Comparador</div>
+      <div class="tagline">Mercado Libre Argentina · búsqueda inteligente</div>
+    </div>
+  </header>
+
+  <div class="hero">
+    <h1>Encontrá el <em>mejor precio</em><br>con criterio real</h1>
+    <p>No solo el más barato — el mejor vendedor, la mejor relación precio-reputación.</p>
+    <div class="search-wrap">
+      <input class="search-input" id="searchInput" type="text" placeholder="Ej: auriculares bluetooth, cafetera, zapatillas..." autocomplete="off"/>
+      <button class="search-btn" id="searchBtn" onclick="doSearch()">Buscar</button>
+    </div>
+  </div>
+
+  <div id="filtersBar" class="filters" style="display:none">
+    <span class="filter-label">Ordenar:</span>
+    <button class="filter-btn active" onclick="sortResults('score', this)">Mejor puntuación</button>
+    <button class="filter-btn" onclick="sortResults('price_asc', this)">Menor precio</button>
+    <button class="filter-btn" onclick="sortResults('price_desc', this)">Mayor precio</button>
+    <button class="filter-btn" onclick="sortResults('sales', this)">Más vendidos</button>
+  </div>
+
+  <div id="app"></div>
+</div>
+
+<footer>
+  <div class="container">ML Comparador · Datos de Mercado Libre Argentina · Solo para uso informativo</div>
+</footer>
+
+<script>
+let accessToken = null;
+let tokenExpiry = 0;
+let allResults = [];
+let currentSort = 'score';
+
+const app = document.getElementById('app');
+const filtersBar = document.getElementById('filtersBar');
+const searchInput = document.getElementById('searchInput');
+const searchBtn = document.getElementById('searchBtn');
+
+searchInput.addEventListener('keydown', e => { if (e.key === 'Enter') doSearch(); });
+
+async function getToken() {
+  if (accessToken && Date.now() < tokenExpiry) return accessToken;
+  const res = await fetch('/api/token', { method: 'POST' });
+  if (!res.ok) throw new Error('No se pudo autenticar con Mercado Libre');
+  const data = await res.json();
+  accessToken = data.access_token;
+  tokenExpiry = Date.now() + (data.expires_in - 60) * 1000;
+  return accessToken;
+}
+
+function scoreProduct(p) {
+  let score = 0;
+  const rep = p.seller?.seller_reputation?.level_id || '';
+  if (rep === 'platinum') score += 30;
+  else if (rep === 'gold') score += 25;
+  else if (rep === 'silver') score += 15;
+  else score += 5;
+  if (p.shipping?.free_shipping) score += 20;
+  if (p.condition === 'new') score += 10;
+  const sold = p.sold_quantity || 0;
+  if (sold > 1000) score += 20;
+  else if (sold > 100) score += 12;
+  else if (sold > 10) score += 6;
+  if (p.original_price && p.price < p.original_price) score += 8;
+  return score;
+}
+
+function addPriceScore(results) {
+  const prices = results.map(r => r.price).filter(Boolean);
+  if (!prices.length) return results;
+  const minP = Math.min(...prices);
+  const maxP = Math.max(...prices);
+  const range = maxP - minP || 1;
+  return results.map(r => ({ ...r, _priceScore: Math.round(((maxP - r.price) / range) * 15) }));
+}
+
+function finalScore(p) { return (p._baseScore || 0) + (p._priceScore || 0); }
+function repLabel(level) { return { platinum: 'Platinum', gold: 'Gold', silver: 'Plata', bronze: 'Bronce' }[level] || 'Sin dato'; }
+function repClass(level) { return { platinum: 'rep-platinum', gold: 'rep-gold', silver: 'rep-silver' }[level] || 'rep-green'; }
+function formatPrice(n) { return '$' + Math.round(n).toLocaleString('es-AR'); }
+
+async function doSearch() {
+  const q = searchInput.value.trim();
+  if (!q) return;
+  searchBtn.disabled = true;
+  searchBtn.textContent = 'Buscando...';
+  filtersBar.style.display = 'none';
+  app.innerHTML = `<div class="status"><div class="spinner"></div>Buscando en Mercado Libre…</div>`;
+  try {
+    const token = await getToken();
+    const res = await fetch(`https://api.mercadolibre.com/sites/MLA/search?q=${encodeURIComponent(q)}&limit=20`, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    if (!res.ok) throw new Error('Error al buscar productos');
+    const data = await res.json();
+    if (!data.results || data.results.length === 0) {
+      app.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div><h3>Sin resultados</h3><p>Probá con otro término.</p></div>`;
+      return;
+    }
+    let results = data.results.map(p => ({ ...p, _baseScore: scoreProduct(p) }));
+    results = addPriceScore(results);
+    results = results.map(p => ({ ...p, _finalScore: finalScore(p) }));
+    allResults = results;
+    currentSort = 'score';
+    renderResults(allResults, data.paging?.total || allResults.length, q);
+    filtersBar.style.display = 'flex';
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector('.filter-btn').classList.add('active');
+  } catch (err) {
+    app.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><h3>Algo salió mal</h3><p>${err.message}</p></div>`;
+  } finally {
+    searchBtn.disabled = false;
+    searchBtn.textContent = 'Buscar';
+  }
+}
+
+function sortResults(mode, btn) {
+  currentSort = mode;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let sorted = [...allResults];
+  if (mode === 'score') sorted.sort((a, b) => b._finalScore - a._finalScore);
+  else if (mode === 'price_asc') sorted.sort((a, b) => a.price - b.price);
+  else if (mode === 'price_desc') sorted.sort((a, b) => b.price - a.price);
+  else if (mode === 'sales') sorted.sort((a, b) => (b.sold_quantity || 0) - (a.sold_quantity || 0));
+  renderCards(sorted);
+}
+
+function getAISummary(results, q) {
+  const top = results[0];
+  const withFreeShipping = results.filter(r => r.shipping?.free_shipping).length;
+  const avgPrice = Math.round(results.reduce((a, r) => a + r.price, 0) / results.length);
+  const minPrice = Math.min(...results.map(r => r.price));
+  const maxPrice = Math.max(...results.map(r => r.price));
+  return `Encontré <strong>${results.length} resultados</strong> para "<em>${q}</em>". Precio promedio <strong>${formatPrice(avgPrice)}</strong>, rango de ${formatPrice(minPrice)} a ${formatPrice(maxPrice)}. <strong>${withFreeShipping} productos</strong> con envío gratis. Mejor opción: <strong>${top.title.substring(0, 50)}…</strong>`;
+}
+
+function buildCard(p, i, maxScore) {
+  const scoreNorm = Math.round((p._finalScore / maxScore) * 100);
+  const isTop = i === 0 && currentSort === 'score';
+  const rep = p.seller?.seller_reputation?.level_id;
+  const sold = p.sold_quantity || 0;
+  const hasDiscount = p.original_price && p.price < p.original_price;
+  const discountPct = hasDiscount ? Math.round((1 - p.price / p.original_price) * 100) : 0;
+  return `
+    <a class="product-card ${isTop ? 'top-pick' : ''}" href="${p.permalink}" target="_blank" rel="noopener">
+      ${isTop ? '<div class="top-pick-badge">⭐ Mejor opción</div>' : ''}
+      ${p.thumbnail
+        ? `<img class="product-img" src="${p.thumbnail.replace('http://', 'https://')}" alt="${p.title}" loading="lazy"/>`
+        : `<div class="product-img-placeholder">📦</div>`}
+      <div class="product-info">
+        <div class="product-title">${p.title}</div>
+        <div class="product-meta">
+          ${p.condition === 'new' ? '<span class="badge badge-blue">Nuevo</span>' : '<span class="badge badge-gray">Usado</span>'}
+          ${p.shipping?.free_shipping ? '<span class="badge badge-green">Envío gratis</span>' : ''}
+          ${sold > 0 ? `<span class="badge badge-gray">${sold.toLocaleString()} vendidos</span>` : ''}
+          ${rep ? `<span class="seller-rep"><span class="rep-dot ${repClass(rep)}"></span>${repLabel(rep)}</span>` : ''}
+        </div>
+      </div>
+      <div class="product-price-col">
+        ${hasDiscount ? `<div class="product-price-original">${formatPrice(p.original_price)}</div>` : ''}
+        <div class="product-price">${formatPrice(p.price)}</div>
+        ${hasDiscount ? `<div class="discount-pct">-${discountPct}%</div>` : ''}
+        <div class="score-bar">
+          <span class="score-label">Score</span>
+          <div class="score-track"><div class="score-fill" style="width:${scoreNorm}%"></div></div>
+          <span class="score-num">${scoreNorm}</span>
+        </div>
+      </div>
+    </a>`;
+}
+
+function renderResults(results, total, q) {
+  const sorted = [...results].sort((a, b) => b._finalScore - a._finalScore);
+  const maxScore = sorted[0]?._finalScore || 1;
+  app.innerHTML = `
+    <div class="results-header">
+      <div class="results-count" id="resultsCount"><strong>${results.length}</strong> resultados de <strong>${total.toLocaleString()}</strong> en ML</div>
+    </div>
+    <div class="ai-summary"><div class="ai-icon">IA</div><p>${getAISummary(sorted, q)}</p></div>
+    <div class="results-grid" id="resultsGrid">${sorted.map((p, i) => buildCard(p, i, maxScore)).join('')}</div>`;
+}
+
+function renderCards(sorted) {
+  const maxScore = Math.max(...sorted.map(r => r._finalScore), 1);
+  document.getElementById('resultsGrid').innerHTML = sorted.map((p, i) => buildCard(p, i, maxScore)).join('');
+}
+</script>
+</body>
+</html>
