@@ -1,0 +1,7 @@
+{
+  "functions": {
+    "api/token.js": {
+      "regions": ["gru1"]
+    }
+  }
+}
